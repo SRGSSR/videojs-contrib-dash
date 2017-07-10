@@ -496,35 +496,40 @@ var Html5DashJS = function () {
 
   Html5DashJS.prototype.seekable = function seekable() {
     if (this.el_.duration === Number.MAX_VALUE) {
-      var currentTime = this.el_.currentTime,
-          time = this.mediaPlayer_.time(),
-          _start = currentTime - time,
-          _end = _start + this.mediaPlayer_.getDVRWindowSize();
+      if (!this.seekableStart_) {
+        var currentTime = this.el_.currentTime;
+        this.seekableStart_ = currentTime ? currentTime - this.mediaPlayer_.time() : undefined;
+      }
+
+      if (this.seekableStart_) {
+        var _end = this.seekableStart_ + this.mediaPlayer_.getDVRWindowSize(),
+            _start = this.seekableStart_;
+        return {
+          start: function start() {
+            return _start;
+          },
+          end: function end() {
+            return _end;
+          },
+          length: 1
+        };
+      }
+    }
+
+    var seekable = this.el_.seekable;
+
+    if (seekable.length > 0 && seekable.end(seekable.length - 1) === Number.MAX_VALUE) {
       return {
         start: function start() {
-          return _start;
+          return 0;
         },
         end: function end() {
-          return _end;
+          return Infinity;
         },
         length: 1
       };
     } else {
-      var seekable = this.el_.seekable;
-
-      if (seekable.length > 0 && seekable.end(seekable.length - 1) === Number.MAX_VALUE) {
-        return {
-          start: function start() {
-            return 0;
-          },
-          end: function end() {
-            return Infinity;
-          },
-          length: 1
-        };
-      } else {
-        return seekable;
-      }
+      return seekable;
     }
   };
 

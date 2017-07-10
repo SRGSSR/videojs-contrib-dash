@@ -160,35 +160,40 @@ class Html5DashJS {
 
   seekable() {
     if (this.el_.duration === Number.MAX_VALUE) {
-      const currentTime = this.el_.currentTime,
-            time = this.mediaPlayer_.time(),
-            start = currentTime - time,
-            end = start + this.mediaPlayer_.getDVRWindowSize();
+      if (!this.seekableStart_) {
+        const currentTime = this.el_.currentTime;
+        this.seekableStart_ = (currentTime) ? currentTime - this.mediaPlayer_.time() : undefined;
+      }
+
+      if (this.seekableStart_) {
+        const end = this.seekableStart_ + this.mediaPlayer_.getDVRWindowSize(),
+              start = this.seekableStart_;
+          return {
+            start: function() {
+              return start;
+            },
+            end: function() {
+              return end;
+            },
+            length: 1
+          };
+      }
+    }
+
+    const seekable = this.el_.seekable;
+
+    if (seekable.length > 0 && seekable.end(seekable.length-1) === Number.MAX_VALUE) {
       return {
         start: function() {
-          return start;
+          return 0;
         },
         end: function() {
-          return end;
+          return Infinity;
         },
         length: 1
       };
     } else {
-      const seekable = this.el_.seekable;
-
-      if (seekable.length > 0 && seekable.end(seekable.length-1) === Number.MAX_VALUE) {
-        return {
-          start: function() {
-            return 0;
-          },
-          end: function() {
-            return Infinity;
-          },
-          length: 1
-        };
-      } else {
-        return seekable;
-      }
+      return seekable;
     }
   }
 
