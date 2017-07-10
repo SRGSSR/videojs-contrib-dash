@@ -496,15 +496,11 @@ var Html5DashJS = function () {
 
   Html5DashJS.prototype.seekable = function seekable() {
     if (this.el_.duration === Number.MAX_VALUE) {
-      if (!this.seekableStart_) {
-        var currentTime = this.el_.currentTime;
-        this.seekableStart_ = currentTime ? currentTime - this.mediaPlayer_.time() : undefined;
-      }
+      if (!this.mediaPlayer_.isSeeking()) {
+        var _start = this.el_.currentTime - this.mediaPlayer_.time(),
+            _end = _start + this.mediaPlayer_.getDVRWindowSize();
 
-      if (this.seekableStart_) {
-        var _end = this.seekableStart_ + this.mediaPlayer_.getDVRWindowSize(),
-            _start = this.seekableStart_;
-        return {
+        this.currSeekable_ = {
           start: function start() {
             return _start;
           },
@@ -513,6 +509,10 @@ var Html5DashJS = function () {
           },
           length: 1
         };
+      }
+
+      if (this.currSeekable_) {
+        return this.currSeekable_;
       }
     }
 
