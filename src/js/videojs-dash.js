@@ -249,6 +249,11 @@ class Html5DashJS {
     // Setup text tracks
     setupTextTracks.call(null, this.player, tech, options);
 
+    // Fix liveui seek issue
+    this.tech_.seekable = this.seekable.bind(this);
+    this.tech_.setCurrentTime = this.setCurrentTime.bind(this);
+    this.tech_.currentTime = this.currentTime.bind(this);
+
     // Attach the source with any protection data
     this.mediaPlayer_.setProtectionData(this.keySystemOptions_);
     this.mediaPlayer_.attachSource(manifestSource);
@@ -282,6 +287,15 @@ class Html5DashJS {
     }
 
     return output;
+  }
+
+  currentTime() {
+    // Livestream
+    if (this.mediaPlayer_.isDynamic()) {
+      return this.mediaPlayer_.time() + this.timeDiffFromStart(this.startTime()) + 10;
+    }
+
+    return this.mediaPlayer_.time();
   }
 
   dispose() {
@@ -352,6 +366,60 @@ class Html5DashJS {
     Html5DashJS.hooks_[type].splice(index, 1);
 
     return true;
+  }
+
+  seekable() {
+    const duration = this.duration();
+    const dvrWindowLength = this.mediaPlayer_.getDVRWindowSize();
+    const sessionStartedTime = this.timeDiffFromStart(this.startTime());
+
+    if (duration === 0) {
+      return videojs.createTimeRange();
+    }
+
+    // Livestream
+    if (this.mediaPlayer_.isDynamic()) {
+      return videojs.createTimeRange(
+        sessionStartedTime,
+        sessionStartedTime + dvrWindowLength
+      );
+    }
+
+    // VOD
+    return videojs.createTimeRange(0, duration);
+  }
+
+  setCurrentTime(time) {
+    const seekable = this.tech_.seekable();
+
+    // Livestream
+    if (seekable.length && this.mediaPlayer_.isDynamic()) {
+      this.mediaPlayer_.seek(time - this.timeDiffFromStart(this.startTime()));
+    } else {
+      this.mediaPlayer_.seek(time);
+    }
+
+    this.player.trigger('seeking');
+  }
+
+  /**
+   * Timestamp in seconds. Used to create the time range
+   */
+  startTime() {
+    if (!this.startTime_) {
+      this.startTime_ = (Date.now() / 1000) | 0;
+    }
+
+    return this.startTime_;
+  }
+
+  /**
+   * Diff between now and startTime
+   *
+   * @param {number} startTime timestamp in seconds
+   */
+  timeDiffFromStart(startTime) {
+    return (Date.now() / 1000 - startTime) | 0;
   }
 }
 
