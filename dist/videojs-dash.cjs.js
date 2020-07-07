@@ -644,6 +644,10 @@ function () {
   };
 
   _proto.seekable = function seekable() {
+    if (!this.mediaPlayer_.isReady()) {
+      return videojs.createTimeRange();
+    }
+
     var duration = this.duration();
     var dvrWindowLength = this.mediaPlayer_.getDVRWindowSize();
     var sessionStartedTime = this.timeDiffFromStart(this.startTime());
