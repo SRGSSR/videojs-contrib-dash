@@ -369,6 +369,10 @@ class Html5DashJS {
   }
 
   seekable() {
+    if (!this.mediaPlayer_.isReady()) {
+      return videojs.createTimeRange();
+    }
+
     const duration = this.duration();
     const dvrWindowLength = this.mediaPlayer_.getDVRWindowSize();
     const sessionStartedTime = this.timeDiffFromStart(this.startTime());
